@@ -155,5 +155,3 @@ By performing **SQL-based EDA**, we:
 - Identified key statistics on customer behavior.  
 - Discovered churn trends by region.  
 - Found the most frequently purchased product categories.  
-
-Next, we will **repeat this analysis in VS Code** using **PostgreSQL** to demonstrate proficiency in both environments.
