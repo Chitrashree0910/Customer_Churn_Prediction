@@ -253,3 +253,19 @@ SELECT
     AVG("engagement_score") AS avg_val,
     STDDEV("engagement_score") AS std_dev
 FROM churn_data;
+
+-- Updating the Engagement Category distributions - setting better thresholds, so we can get a clearer distinction between Low, Medium, and High engagement
+
+-- Updating engagement categories with new thresholds
+UPDATE processed_churn_data
+SET engagement_category =
+    CASE 
+        WHEN engagement_score BETWEEN 0 AND 20 THEN 'Low'
+        WHEN engagement_score BETWEEN 21 AND 60 THEN 'Medium'
+        ELSE 'High'
+    END;
+
+SELECT engagement_category,
+    COUNT(*) AS total_customers
+FROM processed_churn_data
+GROUP BY engagement_category;
