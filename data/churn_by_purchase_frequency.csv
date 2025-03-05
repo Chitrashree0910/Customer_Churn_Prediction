@@ -1,0 +1,4 @@
+purchase_frequency_category,total_customers,churned_customers,churn_rate
+Frequent (1-7 days),287,152,52.96
+Occasional (7-30 days),2211,1116,50.47
+Rare (> 30 days),5502,2751,50.0
