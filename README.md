@@ -164,60 +164,32 @@ Performed SQL-based <b>feature engineering</b> using PostgreSQL in pgAdmin 4 to 
 
 Detailed SQL scripts can be found in [`feature_engineering.sql`](sql_queries/feature_engineering.sql)
 
+Details about impact and churn analysis can be found in [`sql_queries_business_insights.ipynb`](notebooks/sql_queries_business_insights.ipynb)
+
 ### Data Visualization
-
-#### Categorizing Purchase Frequency
+#### Calculating Engagement Category distributions
 ```sql
-SELECT "Customer_ID", 
-       "Total_Orders", 
-       CASE 
-           WHEN "Total_Orders" <= 5 THEN 'Low'
-           WHEN "Total_Orders" BETWEEN 6 AND 12 THEN 'Medium'
-           ELSE 'High' 
-       END AS "Purchase_Frequency_Category"
-FROM churn_data;
-```
+UPDATE processed_churn_data
+SET engagement_category =
+    CASE 
+        WHEN engagement_score BETWEEN 0 AND 20 THEN 'Low'
+        WHEN engagement_score BETWEEN 21 AND 60 THEN 'Medium'
+        ELSE 'High'
+    END;
 
-#### Calculating Average Days Between Purchases
-```sql
-SELECT "Customer_ID", 
-       AVG("Days_Between_Orders") AS "Avg_Days_Between_Purchases"
-FROM churn_data
-GROUP BY "Customer_ID";
-```
-
-#### Classifying Customers into Churn Risk Levels
-```sql
-SELECT "Customer_ID", 
-       "Churn_Probability", 
-       CASE 
-           WHEN "Churn_Probability" < 0.3 THEN 'Low'
-           WHEN "Churn_Probability" BETWEEN 0.3 AND 0.7 THEN 'Medium'
-           ELSE 'High' 
-       END AS "Churn_Risk_Level"
-FROM churn_data;
+SELECT engagement_category,
+    COUNT(*) AS total_customers
+FROM processed_churn_data
+GROUP BY engagement_category;
 ```
 
 ### Result
-#### Key Feature Engineering Tables
 
-| Customer_ID | Total Orders | Purchase Frequency Category |
-|------------|--------------|----------------------------|
-| 1001       | 3            | Low                        |
-| 1002       | 9            | Medium                     |
-| 1003       | 15           | High                       |
-
-| Customer_ID | Avg Days Between Purchases |
-|------------|---------------------------|
-| 1001       | 25                         |
-| 1002       | 47                         |
-| 1003       | 18                         |
-
-| Customer_ID | Churn Probability | Churn Risk Level |
+| Customer_ID | engagement_category | Churn Risk Level |
 |------------|-------------------|-----------------|
-| 1001       | 0.85              | High            |
-| 1002       | 0.45              | Medium          |
-| 1003       | 0.15              | Low             |
+| 1001       | High             | 1645            |
+| 1002       | Medium           | 3359            |
+| 1003       | Low              | 4996            |
 
 ### Insights
 - **Purchase Frequency and AOV Segmentation** help in understanding customer behavior.
@@ -247,9 +219,7 @@ Performed **machine learning model building and evaluation** using Python to pre
    - Used key performance metrics to evaluate model effectiveness:
      - **Accuracy**
      - **Precision, Recall, F1-score**
-     - **Confusion Matrix**
-     - **ROC-AUC Score**
-   - Visualized results using confusion matrices and ROC curves.
+   - Visualized results using plots.
 
 Detailed model training scripts can be found in [`model_building.ipynb`](notebooks/model_building.ipynb) 
 
@@ -258,7 +228,11 @@ Detailed model training scripts can be found in [`model_building.ipynb`](noteboo
 #### Splitting the Dataset
 ```python
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# Splitting data (80% Train, 20% Test)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
 ```
 
 #### Standardizing Features
@@ -271,18 +245,11 @@ X_test_scaled = scaler.transform(X_test)
 
 #### Training Logistic Regression Model
 ```python
-from sklearn.linear_model import LogisticRegression
-logreg = LogisticRegression()
-logreg.fit(X_train_scaled, y_train)
-```
+log_reg = LogisticRegression(random_state=42, max_iter=5000, solver='saga', class_weight='balanced')
+log_reg.fit(X_train, y_train)
 
-#### Evaluating Model Performance
-```python
-from sklearn.metrics import accuracy_score, classification_report
-
-y_pred = logreg.predict(X_test_scaled)
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print(classification_report(y_test, y_pred))
+# Make predictions
+y_pred = log_reg.predict(X_test)
 ```
 
 #### Confusion Matrix Visualization
@@ -297,18 +264,9 @@ plt.show()
 ### Result
 ![feature importance](output_images/feature_importance.png) 
 
-#### Model Performance Comparison
-| Model                  | Accuracy | Precision | Recall | F1-score | ROC-AUC |
-|------------------------|----------|-----------|--------|-----------|----------|
-| Logistic Regression    | 85%      | 0.82      | 0.78   | 0.80      | 0.88     |
-| Random Forest         | 89%      | 0.85      | 0.82   | 0.83      | 0.92     |
-| XGBoost               | 91%      | 0.88      | 0.85   | 0.86      | 0.94     |
-
 ### Insights
-- **XGBoost achieved the best performance** with the highest accuracy, recall, and ROC-AUC score.
 - **Feature scaling significantly improved Logistic Regression results.**
 - **Random Forest performed well** but had slightly lower recall than XGBoost.
-- The confusion matrix shows that **misclassification errors were minimal** in the best-performing models.
 
 These results help in selecting the most effective model for predicting customer churn and improving retention strategies.
 
